@@ -173,11 +173,7 @@ function App(): React.JSX.Element {
         const isRTL = parsed.rtl !== false; // default true
         forceRTL(isRTL);
 
-        // 3. Notifications & permissions
-        await setupNotifications();
-        await requestPermissions();
-
-        // 4. Mark first launch if needed
+        // 3. Mark first launch if needed
         const hasLaunched = await AsyncStorage.getItem(STORAGE_KEYS.HAS_LAUNCHED);
         if (!hasLaunched) {
           await AsyncStorage.setItem(STORAGE_KEYS.HAS_LAUNCHED, 'true');
@@ -191,6 +187,16 @@ function App(): React.JSX.Element {
 
     bootstrap();
   }, []);
+
+  // Delay notifee init to after first render — avoids native crashes blocking UI
+  useEffect(() => {
+    if (!isReady) return;
+    const timer = setTimeout(() => {
+      setupNotifications().catch(err => console.warn('[Notifee] setup:', err));
+      requestPermissions().catch(err => console.warn('[Notifee] perm:', err));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isReady]);
 
   const navigationTheme = {
     dark: false,
@@ -206,9 +212,9 @@ function App(): React.JSX.Element {
 
   if (!isReady) {
     return (
-      <View style={splashStyles.container}>
-        <Text style={splashStyles.title}>تسبيحي</Text>
-        <Text style={splashStyles.subtitle}>بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</Text>
+      <View style={[splashStyles.container, { backgroundColor: '#1B5E20' }]}>
+        <Text style={[splashStyles.title, { color: '#FFFFFF', fontSize: 48 }]}>تسبيحي</Text>
+        <Text style={[splashStyles.subtitle, { color: '#FFFFFF' }]}>بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</Text>
       </View>
     );
   }
