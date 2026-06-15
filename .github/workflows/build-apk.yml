@@ -9,12 +9,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Limit Java/Gradle memory to prevent OOM on free runners (7GB total)
-      JAVA_OPTS: "-Xmx1536m -XX:MaxMetaspaceSize=384m"
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx1536m -XX:MaxMetaspaceSize=384m'"
-      # Reduce Node memory footprint
-      NODE_OPTIONS: "--max-old-space-size=2048"
-      # Build only ARM ABIs (what real Android devices use) — cuts build time by 50%
+      # Memory tuning based on community best practices for 2-core/7GB runners
+      JAVA_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m'"
+      NODE_OPTIONS: "--max-old-space-size=4096"
+      # Build only ARM ABIs — cuts build time by 50%
       ORG_GRADLE_PROJECT_reactNativeArchitectures: "armeabi-v7a,arm64-v8a"
 
     steps:
@@ -39,8 +38,10 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          key: ${{ runner.os }}-gradle-v2-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-v2-
+            ${{ runner.os }}-gradle-
 
       - name: Install dependencies
         run: npm ci
@@ -50,11 +51,11 @@ jobs:
 
       - name: Configure Gradle for CI
         run: |
-          # Add blank line then override Gradle settings for CI
-          printf '\norg.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=384m\norg.gradle.daemon=false\norg.gradle.parallel=false\norg.gradle.workers.max=1\norg.gradle.caching=true\nandroid.enableJetifier=false\n' >> android/gradle.properties
+          # Append CI-optimized Gradle settings (leading newline prevents corruption)
+          printf '\norg.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m\norg.gradle.daemon=false\norg.gradle.parallel=true\norg.gradle.workers.max=2\norg.gradle.caching=true\nandroid.enableJetifier=false\n' >> android/gradle.properties
 
-      - name: Build APK
-        run: cd android && ./gradlew assembleDebug --no-daemon --no-parallel --max-workers=1 --stacktrace
+      - name: Build APK (Debug)
+        run: cd android && ./gradlew assembleDebug --no-daemon --parallel --max-workers=2 --build-cache --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
