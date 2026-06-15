@@ -54,11 +54,11 @@ jobs:
           printf '\norg.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=384m\norg.gradle.daemon=false\norg.gradle.parallel=false\norg.gradle.workers.max=1\norg.gradle.caching=true\nandroid.enableJetifier=false\n' >> android/gradle.properties
 
       - name: Build APK
-        run: cd android && ./gradlew assembleRelease --no-daemon --no-parallel --max-workers=1 --stacktrace
+        run: cd android && ./gradlew assembleDebug --no-daemon --no-parallel --max-workers=1 --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Tasbihi-APK
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
