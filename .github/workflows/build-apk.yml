@@ -54,6 +54,16 @@ jobs:
           # Append CI-optimized Gradle settings (leading newline prevents corruption)
           printf '\norg.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m\norg.gradle.daemon=false\norg.gradle.parallel=true\norg.gradle.workers.max=2\norg.gradle.caching=true\nandroid.enableJetifier=false\n' >> android/gradle.properties
 
+      - name: Bundle JavaScript (embed into APK)
+        run: |
+          mkdir -p android/app/src/main/assets
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.ts \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res
+
       - name: Build APK (Debug)
         run: cd android && ./gradlew assembleDebug --no-daemon --parallel --max-workers=2 --build-cache --stacktrace
 
